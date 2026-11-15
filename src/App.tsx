@@ -18,7 +18,7 @@ import {
 import Dropzone from "./components/Dropzone";
 import TimelinePreview from "./components/TimelinePreview";
 import SliceThumbs from "./components/SliceThumbs";
-import { AspectChips, CountSlider, ExportFields, PostToX } from "./components/Controls";
+import { AspectChips, CountSlider, ExportFields, SaveToAlbum } from "./components/Controls";
 import { t, type Lang } from "./lib/i18n";
 import {
   MAX_SLICES,
@@ -563,7 +563,6 @@ export default function App() {
                       {notice}
                     </p>
                   )}
-                  <PostToX files={exportFiles} T={T} onDone={flash} />
                 </div>
               </div>
 
@@ -597,7 +596,7 @@ export default function App() {
                   <p className="mt-2 text-xs text-neutral-400">{T("previewHint")}</p>
                 </div>
 
-                <SliceThumbs slices={slices} title={T("slices")} hint={T("clickToDownload")} />
+                <SliceThumbs slices={slices} title={T("slices")} hint={T("clickToDownload")} T={T} />
               </div>
             </div>
           ))}
@@ -728,7 +727,7 @@ export default function App() {
                 {notice && (
                   <p className="mt-2 text-center text-xs font-medium text-emerald-600 dark:text-emerald-400">{notice}</p>
                 )}
-                <PostToX files={exportFiles} T={T} onDone={flash} />
+                {multiMode === "raw" && <SaveToAlbum files={exportFiles} T={T} onDone={flash} />}
               </div>
             </div>
 
@@ -763,7 +762,7 @@ export default function App() {
               </div>
 
               {multiMode === "stitch" && slices.length > 0 && (
-                <SliceThumbs slices={slices} title={T("slices")} hint={T("clickToDownload")} />
+                <SliceThumbs slices={slices} title={T("slices")} hint={T("clickToDownload")} T={T} />
               )}
             </div>
           </div>

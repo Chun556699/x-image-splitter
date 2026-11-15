@@ -178,7 +178,7 @@ export async function downloadZip(files: { blob: Blob; name: string }[], zipName
   downloadBlob(blob, zipName);
 }
 
-export type PostResult = "shared" | "downloaded" | "cancelled";
+export type SaveResult = "shared" | "downloaded" | "cancelled";
 
 interface DirHandle {
   getFileHandle(
@@ -187,19 +187,20 @@ interface DirHandle {
   ): Promise<{ createWritable: () => Promise<{ write: (b: Blob) => Promise<void>; close: () => Promise<void> }> }>;
 }
 
-/** Save slices & open X composer. Mobile: native share sheet with files attached. */
-export async function postToX(files: { blob: Blob; name: string }[], text: string): Promise<PostResult> {
+/** Save images to the device. Mobile: native share sheet (its "Save Images"
+ * action writes straight to Photos). Desktop: folder picker or downloads. */
+export async function saveToAlbum(files: { blob: Blob; name: string }[]): Promise<SaveResult> {
   const base = Date.now();
   const objs = files.map(
     (f, i) => new File([f.blob], f.name, { type: f.blob.type || "image/png", lastModified: base - i * 60_000 }),
   );
   const nav = navigator as Navigator & {
     canShare?: (d: { files?: File[] }) => boolean;
-    share?: (d: { files?: File[]; text?: string }) => Promise<void>;
+    share?: (d: { files?: File[] }) => Promise<void>;
   };
   if (nav.canShare?.({ files: objs }) && nav.share) {
     try {
-      await nav.share({ files: objs, ...(text.trim() ? { text: text.trim() } : {}) });
+      await nav.share({ files: objs });
       return "shared";
     } catch (e) {
       if ((e as Error).name === "AbortError") return "cancelled";
@@ -227,9 +228,6 @@ export async function postToX(files: { blob: Blob; name: string }[], text: strin
     }
   }
   if (!saved) rev.forEach((f, i) => setTimeout(() => downloadBlob(f.blob, f.name), i * 300));
-
-  const url = `https://x.com/intent/post${text.trim() ? `?text=${encodeURIComponent(text.trim())}` : ""}`;
-  window.open(url, "_blank", "noopener");
   return "downloaded";
 }
 

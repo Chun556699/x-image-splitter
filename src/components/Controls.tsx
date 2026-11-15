@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { Share2 } from "lucide-react";
-import { MAX_SLICES, postToX, type AspectKey, type OutFormat } from "../lib/slicer";
+import { ImageDown } from "lucide-react";
+import { MAX_SLICES, saveToAlbum, type AspectKey, type OutFormat } from "../lib/slicer";
 import type { TKey } from "../lib/i18n";
 
 type TF = (key: TKey, vars?: Record<string, string | number>) => string;
@@ -127,7 +127,7 @@ export function ExportFields({
   );
 }
 
-export function PostToX({
+export function SaveToAlbum({
   files,
   T,
   onDone,
@@ -136,37 +136,27 @@ export function PostToX({
   T: TF;
   onDone: (msg: string) => void;
 }) {
-  const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
 
   const go = async () => {
     setBusy(true);
     try {
-      const r = await postToX(files, text);
-      if (r === "shared") onDone(T("postShared"));
-      else if (r === "downloaded") onDone(T("postSaved", { n: files.length }));
+      const r = await saveToAlbum(files);
+      if (r === "shared") onDone(T("albumShared"));
+      else if (r === "downloaded") onDone(T("albumSaved", { n: files.length }));
     } finally {
       setBusy(false);
     }
   };
 
   return (
-    <div className="mt-3 border-t border-neutral-200 pt-3 dark:border-neutral-700">
-      <input
-        value={text}
-        onChange={(e) => setText(e.target.value)}
-        placeholder={T("postTextPh")}
-        maxLength={280}
-        className={inputCls}
-      />
-      <button
-        onClick={() => void go()}
-        disabled={!files.length || busy}
-        className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl border-2 border-neutral-900 py-2 text-sm font-semibold text-neutral-900 transition-colors hover:bg-neutral-900 hover:text-white disabled:opacity-50 dark:border-white dark:text-white dark:hover:bg-white dark:hover:text-neutral-900"
-      >
-        <Share2 className="size-4" />
-        {busy ? "…" : T("postToX")}
-      </button>
-    </div>
+    <button
+      onClick={() => void go()}
+      disabled={!files.length || busy}
+      className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl border-2 border-neutral-900 py-2 text-sm font-semibold text-neutral-900 transition-colors hover:bg-neutral-900 hover:text-white disabled:opacity-50 dark:border-white dark:text-white dark:hover:bg-white dark:hover:text-neutral-900"
+    >
+      <ImageDown className="size-4" />
+      {busy ? "…" : T("saveAlbumN", { n: files.length })}
+    </button>
   );
 }
