@@ -1,4 +1,5 @@
 import { Heart, MessageCircle, Repeat2, Bookmark, Share, BarChart3, BadgeCheck } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 
 interface Props {
   urls: string[];
@@ -8,6 +9,42 @@ interface Props {
 
 /** Simulates how a multi-image post looks in the X mobile timeline. */
 export default function TimelinePreview({ urls, gap, sliceHeight = 300 }: Props) {
+  const stripRef = useRef<HTMLDivElement>(null);
+  const [boxW, setBoxW] = useState(0);
+  const [aspects, setAspects] = useState<number[]>([]);
+
+  useEffect(() => {
+    const el = stripRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver((entries) => setBoxW(entries[0].contentRect.width));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  // reset measured aspects when the slice set changes
+  useEffect(() => setAspects([]), [urls]);
+
+  // If the slices' total width is narrower than the card, grow the display
+  // height so the strip fills the width exactly (no empty block on the right).
+  // If it would need extreme height (very square sources), cap it and share
+  // the width across slices with object-cover instead.
+  const loadedAll = urls.length > 0 && aspects.filter(Boolean).length === urls.length;
+  const aspectSum = loadedAll ? aspects.reduce((a, b) => a + b, 0) : 0;
+  const n = urls.length;
+  // gaps + 1px border on each side of every img
+  const chrome = Math.max(0, n - 1) * gap + n * 2;
+  const contentW = boxW - chrome;
+  let h = sliceHeight;
+  let stretch = false;
+  if (aspectSum > 0 && boxW > 0) {
+    const naturalW = sliceHeight * aspectSum + chrome;
+    if (naturalW < boxW) {
+      const needed = contentW / aspectSum;
+      h = Math.min(needed, 560);
+      stretch = needed > 560;
+    }
+  }
+
   return (
     <div className="rounded-2xl border border-neutral-200 bg-black overflow-hidden dark:border-neutral-800">
       {/* fake post header */}
@@ -26,17 +63,32 @@ export default function TimelinePreview({ urls, gap, sliceHeight = 300 }: Props)
       {/* the image strip — horizontally scrollable like X */}
       <div className="px-4">
         <div
+          ref={stripRef}
           className="strip-scroll flex overflow-x-auto pb-1"
           style={{ gap: `${gap}px` }}
         >
           {urls.map((u, i) => (
             <img
-              key={i}
+              key={`${i}-${u}`}
               src={u}
               alt={`slice ${i + 1}`}
               draggable={false}
+              onLoad={(e) => {
+                const im = e.currentTarget;
+                const a = im.naturalWidth / im.naturalHeight || 0;
+                setAspects((prev) => {
+                  if (prev[i] === a) return prev;
+                  const next = [...prev];
+                  next[i] = a;
+                  return next;
+                });
+              }}
               className="rounded-xl object-cover shrink-0 border border-neutral-800"
-              style={{ height: sliceHeight, width: "auto" }}
+              style={
+                stretch
+                  ? { height: h, width: (contentW * (aspects[i] || 0)) / aspectSum, objectFit: "cover" }
+                  : { height: h, width: "auto" }
+              }
             />
           ))}
         </div>
