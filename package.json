@@ -1,0 +1,28 @@
+{
+  "name": "x-image-splitter",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Slice one image into up to 20 pieces for X (Twitter) multi-image posts",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "deploy": "npm run build && node scripts/prepare-output.mjs && vercel deploy --prebuilt --temporary --yes"
+  },
+  "dependencies": {
+    "jszip": "^3.10.1",
+    "lucide-react": "^0.545.0",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.3.3",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.1.2",
+    "tailwindcss": "^4.3.3",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.5"
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "name": "x-slice-promo",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "studio": "remotion studio src/index.ts",
+    "music": "node scripts/music.mjs",
+    "render": "remotion render src/index.ts Promo out/x-slice-promo.mp4 --crf 18",
+    "posters": "node scripts/posters.mjs"
+  },
+  "dependencies": {
+    "@fontsource-variable/inter": "^5.3.0",
+    "@remotion/cli": "^4.0.540",
+    "@types/react": "^19.3.0",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "remotion": "^4.0.540",
+    "typescript": "^7.0.2"
+  }
+}
