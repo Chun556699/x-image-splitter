@@ -170,7 +170,10 @@ export function downloadBlob(blob: Blob, name: string) {
 
 export async function downloadZip(files: { blob: Blob; name: string }[], zipName: string) {
   const zip = new JSZip();
-  for (const f of files) zip.file(f.name, f.blob);
+  // Stagger entry mtimes (slice-01 newest): after extraction, date-sorted gallery
+  // pickers list the files in slice order — identical mtimes scramble the order.
+  const base = Date.now();
+  files.forEach((f, i) => zip.file(f.name, f.blob, { date: new Date(base - i * 60_000) }));
   const blob = await zip.generateAsync({ type: "blob", compression: "STORE" });
   downloadBlob(blob, zipName);
 }
@@ -186,7 +189,10 @@ interface DirHandle {
 
 /** Save slices & open X composer. Mobile: native share sheet with files attached. */
 export async function postToX(files: { blob: Blob; name: string }[], text: string): Promise<PostResult> {
-  const objs = files.map((f) => new File([f.blob], f.name, { type: f.blob.type || "image/png" }));
+  const base = Date.now();
+  const objs = files.map(
+    (f, i) => new File([f.blob], f.name, { type: f.blob.type || "image/png", lastModified: base - i * 60_000 }),
+  );
   const nav = navigator as Navigator & {
     canShare?: (d: { files?: File[] }) => boolean;
     share?: (d: { files?: File[]; text?: string }) => Promise<void>;
@@ -202,11 +208,14 @@ export async function postToX(files: { blob: Blob; name: string }[], text: strin
 
   const picker = (window as Window & { showDirectoryPicker?: (o?: { mode?: string }) => Promise<DirHandle> })
     .showDirectoryPicker;
+  // Write files in reverse so slice-01 ends up with the newest mtime — gallery
+  // pickers sorted "newest first" then attach images in the correct order.
+  const rev = [...files].reverse();
   let saved = false;
   if (picker) {
     try {
       const dir = await picker({ mode: "readwrite" });
-      for (const f of files) {
+      for (const f of rev) {
         const fh = await dir.getFileHandle(f.name, { create: true });
         const w = await fh.createWritable();
         await w.write(f.blob);
@@ -217,7 +226,7 @@ export async function postToX(files: { blob: Blob; name: string }[], text: strin
       if ((e as Error).name === "AbortError") return "cancelled";
     }
   }
-  if (!saved) files.forEach((f, i) => setTimeout(() => downloadBlob(f.blob, f.name), i * 300));
+  if (!saved) rev.forEach((f, i) => setTimeout(() => downloadBlob(f.blob, f.name), i * 300));
 
   const url = `https://x.com/intent/post${text.trim() ? `?text=${encodeURIComponent(text.trim())}` : ""}`;
   window.open(url, "_blank", "noopener");
